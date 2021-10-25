@@ -64,3 +64,20 @@ export const resetPassword = (params: any) =>
     method: "get",
     params
   });
+/**
+ * 增加用户
+ * @param params
+ * @returns
+ */
+export const createUser = (data: any) =>
+  request({
+    url: "/api/backstage/users/save",
+    method: "post",
+    data
+  });
+export const updateUser = (data: any) =>
+  request({
+    url: "/api/backstage/users/update",
+    method: "post",
+    data
+  });

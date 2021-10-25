@@ -20,6 +20,7 @@
         style="margin-left: 10px;"
         type="primary"
         icon="el-icon-edit"
+        @click="handleCreate"
       >
         添加
       </el-button>
@@ -113,19 +114,62 @@
       :limit.sync="listQuery.pageSize"
       @pagination="getList"
     />
+    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
+      <el-form
+        ref="dataForm"
+        :model="userData"
+        :rules="rules"
+        label-position="left"
+        label-width="100px"
+        style="width: 400px; margin-left:50px;"
+      >
+        <el-form-item label="登录名" prop="account">
+          <el-input
+            v-model="userData.account"
+            :disabled="dialogStatus === 'update'"
+          />
+        </el-form-item>
+        <el-form-item label="用户名" prop="userName">
+          <el-input v-model="userData.userName" />
+        </el-form-item>
+        <el-form-item label="性别" prop="title">
+          <el-radio-group v-model="userData.gender" size="medium">
+            <el-radio border label="男"></el-radio>
+            <el-radio border label="女"></el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="userData.phone" />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="dialogFormVisible = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          @click="dialogStatus === 'create' ? createData() : updateData()"
+        >
+          确定
+        </el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
+import { Form } from "element-ui";
 import {
   getUserList,
   modifyState,
   removeUser,
-  resetPassword
+  resetPassword,
+  createUser,
+  updateUser
 } from "@/api/users";
 import Pagination from "@/components/Pagination/index.vue";
-// import { IArticleData } from "@/api/types";
+// import { IArticleData } from '@/api/types';
 
 @Component({
   name: "Table",
@@ -147,6 +191,9 @@ import Pagination from "@/components/Pagination/index.vue";
 export default class extends Vue {
   private list = [];
   private listLoading = true;
+  private dialogFormVisible = false;
+  private dialogStatus = "";
+  private userData = {};
   private total = 0;
   private listQuery = {
     pageIndex: 1,
@@ -154,8 +201,22 @@ export default class extends Vue {
     account: "",
     userName: ""
   };
-
+  private textMap = {
+    update: "编辑用户",
+    create: "添加用户"
+  };
+  private rules = {
+    account: [{ required: true, message: "登录名不能为空！", trigger: "blur" }],
+    userName: [
+      { required: true, message: "用户名不能为空！", trigger: "blur" }
+    ],
+    phone: [{ required: true, message: "手机号不能为空！", trigger: "blur" }]
+  };
   created() {
+    this.getList();
+  }
+  private handleFilter() {
+    this.listQuery.pageIndex = 1;
     this.getList();
   }
   private async getList() {
@@ -167,19 +228,59 @@ export default class extends Vue {
       this.listLoading = false;
     }, 0.5 * 1000);
   }
-
-  private handleFilter() {
-    this.listQuery.pageIndex = 1;
-    this.getList();
+  private handleCreate() {
+    // this.resetuserData();
+    this.dialogStatus = "create";
+    this.dialogFormVisible = true;
+    this.$nextTick(() => {
+      (this.$refs.dataForm as Form).clearValidate();
+    });
+  }
+  private createData() {
+    (this.$refs.dataForm as Form).validate(async valid => {
+      if (valid) {
+        const userData = this.userData;
+        Object.assign(userData, {
+          enabled: true,
+          createDate: "2021-10-25",
+          userId: 0
+        });
+        let res = await createUser(userData);
+        this.dialogFormVisible = false;
+        await this.getList();
+        this.$notify({
+          title: "成功",
+          message: "创建成功",
+          type: "success",
+          duration: 2000
+        });
+      }
+    });
+  }
+  private updateData() {
+    (this.$refs.dataForm as Form).validate(async valid => {
+      if (valid) {
+        const userData = this.userData;
+        console.log(userData);
+        await updateUser(userData);
+        this.dialogFormVisible = false;
+        await this.getList();
+        this.$notify({
+          title: "成功",
+          message: "修改成功",
+          type: "success",
+          duration: 2000
+        });
+      }
+    });
   }
   private handleUpdate(row: any) {
-    // this.tempArticleData = Object.assign({}, row)
-    // this.tempArticleData.timestamp = +new Date(this.tempArticleData.timestamp)
-    // this.dialogStatus = 'update'
-    // this.dialogFormVisible = true
-    // this.$nextTick(() => {
-    //   (this.$refs.dataForm as Form).clearValidate()
-    // })
+    this.userData = Object.assign({}, row);
+    this.dialogStatus = "update";
+    this.dialogFormVisible = true;
+    this.$nextTick(() => {
+      (this.$refs.dataForm as Form).clearValidate();
+    });
   }
   private async handleModifyStatus(row: any) {
     await modifyState({ userId: row.userId });

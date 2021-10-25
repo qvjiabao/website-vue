@@ -95,8 +95,8 @@ export default class extends Vue {
   };
 
   private loginForm = {
-    account: "qujiabao",
-    password: "qujiabao"
+    account: "admin",
+    password: "123456"
   };
 
   private loginRules = {
@@ -106,7 +106,6 @@ export default class extends Vue {
 
   private passwordType = "password";
   private loading = false;
-  private showDialog = false;
   private redirect?: string;
   private otherQuery: Dictionary<string> = {};
 
@@ -142,15 +141,19 @@ export default class extends Vue {
     (this.$refs.loginForm as ElForm).validate(async (valid: boolean) => {
       if (valid) {
         this.loading = true;
-        await UserModule.Login(this.loginForm);
-        this.$router.push({
-          path: this.redirect || "/",
-          query: this.otherQuery
-        });
-        // Just to simulate the time of the request
-        setTimeout(() => {
-          this.loading = false;
-        }, 0.5 * 1000);
+        try {
+          await UserModule.Login(this.loginForm);
+          this.$router.push({
+            path: this.redirect || "/",
+            query: this.otherQuery
+          });
+          // Just to simulate the time of the request
+          setTimeout(() => {
+            this.loading = false;
+          }, 0.5 * 1000);
+        } catch (error) {
+             this.loading = false;
+        }
       } else {
         return false;
       }
